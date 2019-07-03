@@ -26,13 +26,19 @@ def readme():
         return f.read()
 
 
-extras = {
-    'MatPlot': ('matplotlib', '2.2.3'),
-    'QtPlot': ('pyqtgraph', '0.10.0'),
-    'coverage tests': ('coverage', '4.0'),
-    'Slack': ('slacker', '0.9.42')
+extras_require = {
+    'MatPlot': ['matplotlib>=2.2.3'],
+    'QtPlot': ['pyqtgraph>=0.10.0'],
+    'coverage tests': ['coverage>=4.0'],
+    'Slack': ['slacker>=0.9.42'],
+    'test': [
+        'hypothesis>=4.25.0',
+        'pyvisa-sim>=0.3',
+        'broadbean>=0.9.1',
+        'lxml',
+    ],
+    'cyro4g': ['pyvisa-py>=0.3'],
 }
-extras_require = {k: '>='.join(v) for k, v in extras.items()}
 
 setup(name='qcodes',
       version=get_version(),
@@ -71,7 +77,7 @@ setup(name='qcodes',
           'pyzmq',
           'wrapt',
           'pandas',
-          'tqdm'
+          'tqdm',
       ],
 
       test_suite='qcodes.tests',
@@ -115,15 +121,20 @@ othererror_template = '''
 '''
 
 # now test the versions of extras
-for extra, (module_name, min_version) in extras.items():
-    try:
-        module = import_module(module_name)
-        if StrictVersion(module.__version__) < StrictVersion(min_version):
-            print(version_template.format(module_name, min_version, extra))
-    except ImportError:
-        print(missing_template.format(module_name, extra))
-    except ValueError:
-        print(valueerror_template.format(
-            module_name, module.__version__, min_version, extra))
-    except:
-        print(othererror_template.format(module_name))
+all_extras = [req for extras in extras_require.values() for req in extras]
+
+for req in all_extras:
+    if '>=' in req:
+        module_name = req.split('>')[0]
+        min_version = req.split('=')[-1]
+        try:
+            module = import_module(module_name)
+            if StrictVersion(module.__version__) < StrictVersion(min_version):
+                print(version_template.format(module_name, min_version, req))
+        except ImportError:
+            print(missing_template.format(module_name, req))
+        except ValueError:
+            print(valueerror_template.format(
+                module_name, module.__version__, min_version, req))
+        except:
+            print(othererror_template.format(module_name))
