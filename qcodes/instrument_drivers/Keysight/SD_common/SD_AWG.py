@@ -368,7 +368,7 @@ class SD_AWG(SD_Module):
         value_name = 'configure clock output connector to {}'.format(status)
         return result_parser(value, value_name, verbose)
 
-    def config_trigger_io(self, direction, sync_mode, verbose=False):
+    def config_trigger_io(self, direction, verbose=False):
         """
         Configures the trigger connector/line direction and synchronization/sampling method
 
@@ -378,9 +378,9 @@ class SD_AWG(SD_Module):
                 Non-synchronized mode   :   0   (trigger is sampled with internal 100 Mhz clock)
                 Synchronized mode       :   1   (trigger is sampled using CLK10)
         """
-        value = self.awg.triggerIOconfig(direction, sync_mode)
+        value = self.awg.triggerIOconfig(direction)
         status = 'input (1)' if direction == 1 else 'output (0)'
-        value_name = 'configure trigger io port to direction: {}, sync_mode: {}'.format(status, sync_mode)
+        value_name = 'configure trigger io port to direction: {}'.format(status)
         return result_parser(value, value_name, verbose)
 
     #
@@ -573,6 +573,34 @@ class SD_AWG(SD_Module):
         """
         self.awg.AWGqueueConfig(awg_number, mode)
 
+    def awg_queue_sync_mode(self, awg_number, sync_mode):
+        """
+        Configures the sync mode of the awg, syncing to either CLKsys or the 10MHz backplane clock
+
+        Args:
+            awg_number: awg channel number
+            sync_mode:  0 = CLKsys, 1 = 10MHz refclk
+        """
+        self.awg.AWGqueueSyncMode(awg_number, sync_mode)
+
+    def awg_queue_marker_config(self, awg_number, marker_mode, trig_pxi_mask, trig_io_mask, value, sync_mode, length, delay):
+        """
+        Configures trigger markers associated with queued signals
+
+        Args:
+            awg_number:     awg channel number
+            marker_mode:    0 = disabled, 1 = on trigger,
+                            2 = on first sample of queued waveform,
+                            3 = on every cycle
+            trig_pxi_mask:  bit mask to sleect pxi triggers to use
+            trig_io_mask:   1 = trigger IO enabled, 0 = disabled
+            value:          0 = low, 1 = high (inverted for pxi)
+            sync_mode:      0 synchronised to CLKsys, 1 synchronised to 10MHz refclk
+            length:         duration of pulse = length*T_CLKsys*5
+            delay:          delay to add before marker pulse = delay*T_CLKsys*5
+        """
+        self.awg.AWGqueueMarkerConfig(awg_number, marker_mode, trig_pxi_mask, trig_io_mask, value, sync_mode, length, delay)
+
     def awg_flush(self, awg_number):
         """
         Empties the queue of the selected AWG.
@@ -659,7 +687,7 @@ class SD_AWG(SD_Module):
         """
         self.awg.AWGjumpNextWaveform(awg_number)
 
-    def awg_config_external_trigger(self, awg_number, external_source, trigger_behaviour):
+    def awg_config_external_trigger(self, awg_number, external_source, trigger_behaviour, sync):
         """
         Configures the external triggers for the selected awg.
         The external trigger is used in case the waveform is queued with th external trigger mode option.
@@ -674,8 +702,9 @@ class SD_AWG(SD_Module):
                 Active Low      :   2
                 Rising Edge     :   3
                 Falling Edge    :   4
+            sync: 0 = asynchronous trigger, 1 = synchronous trigger with clk
         """
-        self.awg.AWGtriggerExternalConfig(awg_number, external_source, trigger_behaviour)
+        self.awg.AWGtriggerExternalConfig(awg_number, external_source, trigger_behaviour, sync)
 
     def awg_trigger(self, awg_number):
         """

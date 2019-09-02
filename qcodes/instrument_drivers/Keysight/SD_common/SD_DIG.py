@@ -64,7 +64,7 @@ class SD_DIG(SD_Module):
         self.__trigger_delay = [0] * self.n_channels
         self.__trigger_mode = [0] * self.n_channels
         # For DAQ trigger Config
-        self.__digital_trigger_mode = [0] * self.n_channels
+        self.__digital_trigger_behaviour = [0] * self.n_channels
         self.__digital_trigger_source = [0] * self.n_channels
         self.__analog_trigger_mask = [0] * self.n_channels
         # For DAQ trigger External Config
@@ -205,11 +205,11 @@ class SD_DIG(SD_Module):
 
             # For DAQ trigger Config
             self.add_parameter(
-                'digital_trigger_mode_{}'.format(n),
-                label='Digital trigger mode for DAQ {}'.format(n),
-                vals=Ints(),
-                set_cmd=partial(self.set_digital_trigger_mode, channel=n),
-                docstring='The digital trigger mode for DAQ {}'.format(n)
+                'digital_trigger_behaviour_{}'.format(n),
+                label='Digital trigger behaviour for DAQ {}'.format(n),
+                vals=Enum(1, 2, 3, 4),
+                set_cmd=partial(self.set_digital_trigger_behaviour, channel=n),
+                docstring='The digital trigger behaviour for DAQ {}'.format(n)
             )
 
             self.add_parameter(
@@ -628,18 +628,19 @@ class SD_DIG(SD_Module):
         return result_parser(value, value_name, verbose)
 
     # DAQ trigger Config
-    def set_digital_trigger_mode(self, mode, channel, verbose=False):
+    def set_digital_trigger_behaviour(self, behaviour, channel, verbose=False):
         """
 
         Args:
             channel (int)       : the input channel you are configuring
-            mode  (int)         : the trigger mode you are using
+            behaviour (int)     : the trigger behaviour you're using (1 = high, 2 = low,
+                                  3 = rising, 4 = falling)
         """
-        self.__digital_trigger_mode[channel] = mode
-        value = self.SD_AIN.DAQtriggerConfig(channel, self.__digital_trigger_mode[channel],
-                                             self.__digital_trigger_source[channel],
-                                             self.__analog_trigger_mask[channel])
-        value_name = 'set_digital_trigger_mode {}'.format(mode)
+        self.__digital_trigger_behaviour[channel] = behaviour
+        value = self.SD_AIN.DAQdigitalTriggerConfig(channel,
+                                                    self.__digital_trigger_source[channel],
+                                                    self.__digital_trigger_behaviour[channel])
+        value_name = 'set_digital_trigger_behaviour {}'.format(behaviour)
         return result_parser(value, value_name, verbose)
 
     def set_digital_trigger_source(self, source, channel, verbose=False):
@@ -647,12 +648,12 @@ class SD_DIG(SD_Module):
 
         Args:
             channel (int)       : the input channel you are configuring
-            source  (int)         : the trigger source you are using
+            source  (int)       : the trigger source you are using (0 = IO trigger, 1 = PXI)
         """
         self.__digital_trigger_source[channel] = source
-        value = self.SD_AIN.DAQtriggerConfig(channel, self.__digital_trigger_mode[channel],
-                                             self.__digital_trigger_source[channel],
-                                             self.__analog_trigger_mask[channel])
+        value = self.SD_AIN.DAQdigitalTriggerConfig(channel,
+                                                    self.__digital_trigger_source[channel],
+                                                    self.__digital_trigger_behaviour[channel])
         value_name = 'set_digital_trigger_source {}'.format(source)
         return result_parser(value, value_name, verbose)
 
@@ -691,7 +692,7 @@ class SD_DIG(SD_Module):
             channel (int)       : the input channel you are configuring
             behaviour  (int)    : the trigger behaviour you are using
         """
-        self.__external_behaviour[channel] = behaviour
+        self.__trigger_behaviour[channel] = behaviour
         value = self.SD_AIN.DAQtriggerExternalConfig(channel, self.__external_source[channel],
                                                      self.__trigger_behaviour[channel])
         value_name = 'set_ext_trigger_behaviour {}'.format(behaviour)
