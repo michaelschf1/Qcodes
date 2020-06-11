@@ -365,7 +365,7 @@ class SD_DIG(SD_Module):
         return result_parser(value, value_name, verbose)
 
     def set_trigger_io(self, val, verbose=False):
-        """ Write a value to the IO trigger port
+        """ Write a value to the IO nrigger port
 
         Args:
             value (int)     : the binary value to write to the IO port
